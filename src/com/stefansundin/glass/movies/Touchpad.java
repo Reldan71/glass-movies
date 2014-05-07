@@ -1,5 +1,7 @@
 package com.stefansundin.glass.movies;
 
+import java.io.File;
+
 import android.widget.ListView;
 
 import com.google.android.glass.touchpad.Gesture;
@@ -21,19 +23,37 @@ public class Touchpad implements
 	}
 
 	public boolean onGesture(Gesture gesture) {
-		Object item = mListView.getSelectedItem();
-		if (item == null) {
-			return false;
-		}
-
-		String filename = item.toString();
+		String filename = mListView.getSelectedItem().toString();
+		
 		if (gesture == Gesture.TAP) {
-			mActivity.launchVideo(filename);
+			
+			if(filename == "<Back to Root>"){
+				mActivity.loadMovieDir(mActivity.mMovieDirectory);
+				return true;
+			}
+						
+			File checkFile = new File(mActivity.mCurrentDirectory + "/" +  filename);
+			if(checkFile.isDirectory() == true) {
+				mActivity.loadMovieDir(mActivity.mCurrentDirectory + "/" +  filename);
+			}
+			else {
+				mActivity.launchVideo(mActivity.mCurrentDirectory + "/" + filename);
+			}
 			return true;
 		}
 		else if (gesture == Gesture.TWO_TAP) {
 			mActivity.say(filename);
 			return true;
+		}
+		else if (gesture == Gesture.SWIPE_DOWN){
+			if(mActivity.mMovieDirectory.equalsIgnoreCase(mActivity.mCurrentDirectory) || mActivity.mCurrentDirectory.contains(mActivity.mMovieDirectory) == false){
+				return false;
+			}
+			else{
+				File backFile = new File(mActivity.mCurrentDirectory);
+				mActivity.loadMovieDir(backFile.getParentFile().getPath());
+				return true;
+			}
 		}
 		/*else if (gesture == Gesture.SWIPE_RIGHT) {
 			Log.d("stefan", "Gesture.SWIPE_RIGHT");
@@ -43,6 +63,7 @@ public class Touchpad implements
 			Log.d("stefan", "Gesture.SWIPE_LEFT");
 			return true;
 		}*/
+		
 		return false;
 	}
 
@@ -52,12 +73,6 @@ public class Touchpad implements
 
 	public boolean onScroll(float displacement, float delta, float velocity) {
 		//Log.d("stefan", "onScroll("+displacement+", "+delta+", "+velocity+")");
-		if (mListView.getSelectedItemPosition() == -1) {
-			// This happens sometimes and I don't know why!
-			mListView.setSelection(0);
-			return false;
-		}
-
 		if (Math.abs(displacement-lastDisplacement) > THRESHOLD) {
 			if (displacement > lastDisplacement) {
 				mListView.setSelection(mListView.getSelectedItemPosition()+1);
